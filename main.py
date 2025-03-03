@@ -30,6 +30,31 @@ class SearchAlgorithm:
         return start, target
 
     @staticmethod
+    def heuristic(pos1, pos2):
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+    @staticmethod
+    def reconstruct_path(came_from, start, target):
+        path = []
+        current = target
+        while current in came_from:
+            path.append(current)
+            current = came_from[current]
+        path.append(start)
+        return path[::-1]
+
+    @staticmethod
+    def plot_grid(grid, path, title):
+        grid_array = np.array([[1 if cell == '-1' else 0 for cell in row] for row in grid])
+        for r, c in path:
+            grid_array[r][c] = 2  # Mark path
+
+        plt.figure(figsize=(6, 6))
+        sns.heatmap(grid_array, annot=True, cmap='coolwarm', linewidths=0.5, linecolor='black', cbar=False)
+        plt.title(title)
+        plt.show()
+
+    @staticmethod
     def best_first_search(grid: List[List[str]]) -> Tuple[int, List[Tuple[int, int]]]:
         start, target = SearchAlgorithm.get_start_target(grid)
         pq = [(SearchAlgorithm.heuristic(start, target), start)]
@@ -45,43 +70,46 @@ class SearchAlgorithm:
                     came_from[neighbor] = current
         return -1, []
 
-    @staticmethod
-    def heuristic(pos1, pos2):
-        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
-
-    @staticmethod
-    def reconstruct_path(came_from, start, target):
-        path = []
-        current = target
-        while current in came_from:
-            path.append(current)
-            current = came_from[current]
-        path.append(start)
-        return path[::-1]
-
-    @staticmethod
-    def plot_grid(grid, path):
-        grid_array = np.array([[1 if cell == '-1' else 0 for cell in row] for row in grid])
-        for r, c in path:
-            grid_array[r][c] = 2  # Mark path
-
-        plt.figure(figsize=(6, 6))
-        sns.heatmap(grid_array, annot=True, cmap='coolwarm', linewidths=0.5, linecolor='black', cbar=False)
-        plt.title("Best First Search Path Visualization")
-        plt.show()
-
 
 if __name__ == "__main__":
-    example = [
-        ['0', '0', '0', '0'],
-        ['0', '-1', '-1', 't'],
-        ['s', '0', '-1', '0'],
-        ['0', '0', '0', '-1']
-    ]
+    examples = {
+        "A* Search": [
+            ['1', '3', '4', '5', '6'],
+            ['1', '-1', '-1', 't', ' '],
+            ['s', '2', '-1', '0', ' '],
+            ['0', '0', '0', '-1', ' ']
+        ],
+        "DFS": [
+            ['1', '2', '3', '4', '5'],
+            ['1', '-1', '-1', 't', ' '],
+            ['s', '0', '-1', '0', ' '],
+            ['0', '0', '0', '-1', ' ']
+        ],
+        "Uniform Cost Search": [
+            ['4', '6', '8', '9'],
+            ['1', '-1', '-1', 't'],
+            ['s', '2', '-1', '0'],
+            ['3', '5', '7', '-1']
+        ],
+        "BFS": [
+            ['5', '7', '8', '9'],
+            ['3', '-1', '-1', 't'],
+            ['s', '1', '-1', '0'],
+            ['2', '4', '6', '-1']
+        ],
+        "Best-first Search": [
+            ['0', '0', '0', '0'],
+            ['0', '-1', '-1', 't'],
+            ['s', '0', '-1', '0'],
+            ['0', '0', '0', '-1']
+        ]
+    }
 
-    found, path = SearchAlgorithm.best_first_search(example)
-    print("Found:", found)
-    print("Path:", path)
+    for title, example in examples.items():
+        found, path = SearchAlgorithm.best_first_search(example)
+        print(f"{title}:")
+        print("Found:", found)
+        print("Path:", path)
 
-    if found == 1:
-        SearchAlgorithm.plot_grid(example, path)
+        if found == 1:
+            SearchAlgorithm.plot_grid(example, path, title)
