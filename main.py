@@ -37,10 +37,9 @@ class SearchAlgorithm:
     def reconstruct_path(came_from, start, target):
         path = []
         current = target
-        while current in came_from:
+        while current is not None:
             path.append(current)
-            current = came_from[current]
-        path.append(start)
+            current = came_from.get(current)
         return path[::-1]
 
     @staticmethod
@@ -70,46 +69,129 @@ class SearchAlgorithm:
                     came_from[neighbor] = current
         return -1, []
 
+    @staticmethod
+    def bfs(grid):
+        start, target = SearchAlgorithm.get_start_target(grid)
+        queue = deque([start])
+        came_from = {start: None}
+
+        while queue:
+            current = queue.popleft()
+            if current == target:
+                return 1, SearchAlgorithm.reconstruct_path(came_from, start, target)
+            for neighbor in SearchAlgorithm.get_neighbors(*current, grid):
+                if neighbor not in came_from:
+                    queue.append(neighbor)
+                    came_from[neighbor] = current
+        return -1, []
+
+    @staticmethod
+    def dfs(grid):
+        start, target = SearchAlgorithm.get_start_target(grid)
+        stack = [start]
+        came_from = {start: None}
+
+        while stack:
+            current = stack.pop()
+            if current == target:
+                return 1, SearchAlgorithm.reconstruct_path(came_from, start, target)
+            for neighbor in SearchAlgorithm.get_neighbors(*current, grid):
+                if neighbor not in came_from:
+                    stack.append(neighbor)
+                    came_from[neighbor] = current
+        return -1, []
+
+    @staticmethod
+    def uniform_cost_search(grid):
+        start, target = SearchAlgorithm.get_start_target(grid)
+        pq = [(0, start)]
+        came_from = {start: None}
+        cost_so_far = {start: 0}
+
+        while pq:
+            current_cost, current = heapq.heappop(pq)
+            if current == target:
+                return 1, SearchAlgorithm.reconstruct_path(came_from, start, target)
+            for neighbor in SearchAlgorithm.get_neighbors(*current, grid):
+                cell_cost = int(grid[neighbor[0]][neighbor[1]]) if grid[neighbor[0]][neighbor[1]].isdigit() else 1
+                new_cost = current_cost + cell_cost
+                if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                    cost_so_far[neighbor] = new_cost
+                    heapq.heappush(pq, (new_cost, neighbor))
+                    came_from[neighbor] = current
+        return -1, []
+
+    @staticmethod
+    def a_star_search(grid):
+        start, target = SearchAlgorithm.get_start_target(grid)
+        pq = [(0, start)]
+        came_from = {start: None}
+        cost_so_far = {start: 0}
+
+        while pq:
+            _, current = heapq.heappop(pq)
+            if current == target:
+                return 1, SearchAlgorithm.reconstruct_path(came_from, start, target)
+            for neighbor in SearchAlgorithm.get_neighbors(*current, grid):
+                cell_cost = int(grid[neighbor[0]][neighbor[1]]) if grid[neighbor[0]][neighbor[1]].isdigit() else 1
+                new_cost = cost_so_far[current] + cell_cost
+                if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                    cost_so_far[neighbor] = new_cost
+                    priority = new_cost + SearchAlgorithm.heuristic(neighbor, target)
+                    heapq.heappush(pq, (priority, neighbor))
+                    came_from[neighbor] = current
+        return -1, []
+
+
 
 if __name__ == "__main__":
     examples = {
         "A* Search": [
-            ['1', '3', '4', '5', '6'],
-            ['1', '-1', '-1', 't', ' '],
-            ['s', '2', '-1', '0', ' '],
-            ['0', '0', '0', '-1', ' ']
+            ['0', '0', '-1', '0'],
+            ['0', '-1', 't', '0'],
+            ['s', '0', '-1', '0'],
+            ['0', '0', '0', '0']
         ],
         "DFS": [
-            ['1', '2', '3', '4', '5'],
-            ['1', '-1', '-1', 't', ' '],
-            ['s', '0', '-1', '0', ' '],
-            ['0', '0', '0', '-1', ' ']
+            ['0', '0', '0', '0'],
+            ['0', '-1', '-1', '0'],
+            ['s', '0', '-1', 't'],
+            ['0', '0', '0', '-1']
         ],
         "Uniform Cost Search": [
-            ['4', '6', '8', '9'],
-            ['1', '-1', '-1', 't'],
-            ['s', '2', '-1', '0'],
-            ['3', '5', '7', '-1']
+            ['0', '0', 't', '0'],
+            ['0', '-1', '-1', '0'],
+            ['s', '0', '-1', '0'],
+            ['0', '0', '0', '-1']
         ],
         "BFS": [
-            ['5', '7', '8', '9'],
-            ['3', '-1', '-1', 't'],
-            ['s', '1', '-1', '0'],
-            ['2', '4', '6', '-1']
-        ],
-        "Best-first Search": [
             ['0', '0', '0', '0'],
             ['0', '-1', '-1', 't'],
             ['s', '0', '-1', '0'],
             ['0', '0', '0', '-1']
+        ],
+        "Best-first Search": [
+            ['0', '0', '0', '0'],
+            ['0', '-1', '-1', '0'],
+            ['s', '0', '-1', '0'],
+            ['0', '0', 't', '-1']
         ]
     }
 
+    algorithm_map = {
+        "A* Search": SearchAlgorithm.a_star_search,
+        "DFS": SearchAlgorithm.dfs,
+        "Uniform Cost Search": SearchAlgorithm.uniform_cost_search,
+        "BFS": SearchAlgorithm.bfs,
+        "Best-first Search": SearchAlgorithm.best_first_search
+    }
+
     for title, example in examples.items():
-        found, path = SearchAlgorithm.best_first_search(example)
+        found, path = algorithm_map[title](example)
         print(f"{title}:")
         print("Found:", found)
         print("Path:", path)
 
         if found == 1:
             SearchAlgorithm.plot_grid(example, path, title)
+
